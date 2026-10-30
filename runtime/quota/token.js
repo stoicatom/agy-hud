@@ -386,7 +386,6 @@ function readMacosKeychainTokens(platform = process.platform, roots = getAntigra
       sourceFormat: 'macos-keychain',
       ...(token.email ? { email: token.email } : {}),
     }];
-    writeWindowsTokenTemp(tokens, roots);
 
     return { ...token, sourceFormat: 'macos-keychain', all: tokens };
   } catch {
@@ -459,10 +458,9 @@ function readToken(options = {}) {
   } = options;
 
   // macOS: agy stores its OAuth token in macOS Keychain (login keychain).
+  // Keychain lookups via /usr/bin/security take ~13ms, so query live credentials
+  // directly without a disk cache mirror that would mask account switches.
   if (platform === 'darwin' && !skipKeychain) {
-    const tempToken = readWindowsTokenTemp(roots);
-    if (tempToken) return { ...tempToken, sourceFormat: tempToken.sourceFormat || 'macos-keychain' };
-
     const keychainToken = keychainReader(platform, roots);
     if (keychainToken) return keychainToken;
   }
